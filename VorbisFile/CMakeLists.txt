@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.29.3)
 
-project(DLL_Loader VERSION 1.1 LANGUAGES CXX)
+project(ASI_Loader VERSION 1.2.0 LANGUAGES CXX)
 
 
 set(CMAKE_CXX_STANDARD 17)
