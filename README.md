@@ -50,12 +50,12 @@ press enter.
 
 `vorbisFile.dll` path: `build\bin\Release`
 
-after build go to the main GTA: San Andreas folder and rename original `vorbisFile.dll` to `vorbisFileHooked.dll`.
+after build go to the main GTA: San Andreas folder and rename original `vorbisFile.dll` to `vorbisHooked.dll`.
 
 Your directory should look like this:
 ```
 GTA San Andreas
 `-- vorbis.dll
 `-- vorbisFile.dll (the build artifact)
-`-- vorbisFileHooked.dll (the renamed, original file)
+`-- vorbisHooked.dll (the renamed, original file)
 ```
