@@ -115,12 +115,11 @@ static void InitializeASILoader() {
     }
 }
 
-static void FreeRes() 
-{
-for(const auto& DLLFile : dllFiles)
-    FreeLibrary(DLLFile);
-for(const auto& ASIFile : asiFiles)
-    FreeLibrary(ASIFile);
+static void FreeRes() {
+    for (const auto& DLLHandle : loadedDLLModules)
+        FreeLibrary(DLLHandle);
+    for (const auto& ASIHandle : loadedASIModules)
+        FreeLibrary(ASIHandle);
 }
 
 extern "C" __declspec(dllexport) void __cdecl ASILoader() {
