@@ -1,7 +1,6 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.34729.27
+# Visual Studio 17
+VisualStudioVersion = 17.0.31729.27
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VorbisFile", "VorbisFile\VorbisFile.vcxproj", "{6D1D3247-3B49-4B42-89CC-A94FF5A1A919}"
 EndProject
