@@ -1,5 +1,5 @@
 # 1.1-alpha :white_check_mark:
-
+**Jun 22** 
 * First Alpha Release! v1.1 🎈
 * Supports loading the `.asi` and `.dll` files.
 * Supports the following versions of the `gta_sa.exe` : **1.0 US**, **1.01**, **3.0 (steam)**
@@ -7,13 +7,13 @@
 * has `.log` file 
 
 # 1.2.0-alpha (rc1) :white_check_mark:
-
+**Jun 29**
 * Renamed `vorbisFileHooked.dll` to `vorbisHooked.dll`
 * Minor fixes
 * Changed project settings
 
 # 1.2.1-alpha (rc2) :x: **[needs testing]**
-
+**Dec 21**
 * Updated main file.
 * Minor fixes.
 * Added **resource release** feature.
