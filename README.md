@@ -12,10 +12,6 @@ GTA: San Andreas .asi and .dll File Loader
 
 Ensure your directory is organized as follows:
 
-## Directory Structure
-
-Ensure your directory is organized as follows:
-
 ```
 GTA San Andreas
 |
