@@ -10,9 +10,9 @@
 #include <ranges>
 #include <mutex>
 #include <memory>
+#include <unordered_set>
 
 using namespace std;
-
 namespace fs = std::filesystem;
 
 class ASILoader {
@@ -21,22 +21,31 @@ public:
     ~ASILoader() { FreeResources(); }
 
     void Initialize() {
+        AllocConsole();
+        freopen_s((FILE**)stdout, "CONOUT$", "w", stdout);
         OpenLogFile();
-        WriteToLog(L"ASI Loader v1.2.0 initialized.\n");
-        exeUnprotect();
+        WriteToLog(L"ASI Loader v1.2.1 rc2 initialized.\n");
+
+        if (!exeUnprotect()) {
+            WriteToLog(L"[ERROR] Failed to unprotect executable!");
+            return;
+        }
+
         LoadPlugins();
+        LogLoadedModules();
     }
 
 private:
     vector<unique_ptr<HMODULE, decltype(&FreeLibrary)>> loadedASIModules{ &FreeLibrary };
     vector<unique_ptr<HMODULE, decltype(&FreeLibrary)>> loadedDLLModules{ &FreeLibrary };
+    unordered_set<wstring> loadedModuleNames;
     wofstream logFile;
     mutex logMutex;
 
     void OpenLogFile() {
         logFile.open(L"ASI_Loader.log", ios_base::app);
         if (!logFile.is_open()) {
-            wcerr << L"Failed to open log file." << endl;
+            wcerr << L"[ERROR] Failed to open log file." << endl;
             throw runtime_error("Log file could not be opened.");
         }
     }
@@ -47,20 +56,23 @@ private:
             logFile << message << endl;
             logFile.flush();
         }
+        wcout << message << endl;
     }
 
-    void exeUnprotect() {
+    bool exeUnprotect() {
         auto hExecutableInstance = reinterpret_cast<size_t>(GetModuleHandle(nullptr));
-        auto ntHeader = reinterpret_cast<IMAGE_NT_HEADERS*>(hExecutableInstance + reinterpret_cast<IMAGE_DOS_HEADER*>(hExecutableInstance)->e_lfanew);
+        if (!hExecutableInstance) return false;
+
+        auto dosHeader = reinterpret_cast<IMAGE_DOS_HEADER*>(hExecutableInstance);
+        if (dosHeader->e_magic != IMAGE_DOS_SIGNATURE) return false;
+
+        auto ntHeader = reinterpret_cast<IMAGE_NT_HEADERS*>(hExecutableInstance + dosHeader->e_lfanew);
+        if (ntHeader->Signature != IMAGE_NT_SIGNATURE) return false;
+
         SIZE_T size = ntHeader->OptionalHeader.SizeOfImage;
         DWORD oldProtect;
 
-        if (!VirtualProtect(reinterpret_cast<void*>(hExecutableInstance), size, PAGE_EXECUTE_READWRITE, &oldProtect)) {
-            MessageBoxW(nullptr, L"Failed to unprotect executable!", L"Error", MB_OK);
-        } else {
-            MessageBoxW(nullptr, L"Debug: exeUnprotect succeeded!", L"Success", MB_OK);
-            WriteToLog(L"Exe unprotected successfully!");
-        }
+        return VirtualProtect(reinterpret_cast<void*>(hExecutableInstance), size, PAGE_EXECUTE_READWRITE, &oldProtect);
     }
 
     vector<fs::path> GetPluginFiles(const fs::path& directory, const wstring& extension) {
@@ -74,30 +86,53 @@ private:
     }
 
     void LoadPlugins() {
-        fs::path modulePath = fs::current_path();
-        fs::path pluginDirectory = modulePath.parent_path();
+        wchar_t modulePath[MAX_PATH];
+        GetModuleFileNameW(nullptr, modulePath, MAX_PATH);
+        fs::path pluginDirectory = fs::path(modulePath).parent_path();
 
         auto asiFiles = GetPluginFiles(pluginDirectory, L".asi");
         auto dllFiles = GetPluginFiles(pluginDirectory, L".dll");
 
-        for (const auto& file : asiFiles | std::ranges::views::filter(fs::exists)) {
+        for (const auto& file : asiFiles) {
             LoadPlugin(file, loadedASIModules);
         }
 
-        for (const auto& file : dllFiles | std::ranges::views::filter(fs::exists)) {
+        for (const auto& file : dllFiles) {
             LoadPlugin(file, loadedDLLModules);
         }
     }
 
     void LoadPlugin(const fs::path& filePath, vector<unique_ptr<HMODULE, decltype(&FreeLibrary)>>& modules) {
+        if (!fs::exists(filePath)) {
+            WriteToLog(L"[ERROR] Plugin not found: " + filePath.wstring());
+            return;
+        }
+
+        if (loadedModuleNames.count(filePath.filename().wstring())) {
+            WriteToLog(L"[WARNING] Plugin already loaded, skipping: " + filePath.wstring());
+            return;
+        }
+
         HMODULE handle = LoadLibraryExW(filePath.c_str(), nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
         if (handle) {
             modules.emplace_back(handle, &FreeLibrary);
-            WriteToLog(L"Plugin loaded: " + filePath.wstring());
+            loadedModuleNames.insert(filePath.filename().wstring());
+            WriteToLog(L"[INFO] Plugin loaded: " + filePath.wstring());
+
+            // Проверяем конфликт загрузки (если ASI-плагин использует DllMain)
+            if (GetProcAddress(handle, "DllMain")) {
+                WriteToLog(L"[WARNING] Plugin " + filePath.wstring() + L" содержит DllMain, возможен конфликт с другими ASI-плагинами.");
+            }
         } else {
             DWORD errorCode = GetLastError();
-            WriteToLog(L"Failed to load plugin: " + filePath.wstring() + L" Error Code: " + to_wstring(errorCode));
+            WriteToLog(L"[ERROR] Failed to load plugin: " + filePath.wstring() + L" Error Code: " + to_wstring(errorCode));
         }
+    }
+
+    void LogLoadedModules() {
+        WriteToLog(L"\n=== ASI Loader Summary ===");
+        WriteToLog(L"Total ASI Plugins Loaded: " + to_wstring(loadedASIModules.size()));
+        WriteToLog(L"Total DLL Plugins Loaded: " + to_wstring(loadedDLLModules.size()));
     }
 
     void FreeResources() {
@@ -106,13 +141,12 @@ private:
     }
 };
 
-
-// TODO: BUG. There is an endless loading of models, the collision breaks and the lodes appear.
+// Экспортируемая функция
 extern "C" __declspec(dllexport) void __cdecl ASILoader() {
     try {
         ASILoader loader;
         loader.Initialize();
     } catch (const exception& e) {
-        wcerr << L"ASI Loader encountered an error: " << e.what() << endl;
+        wcerr << L"[CRITICAL] ASI Loader encountered an error: " << e.what() << endl;
     }
 }
