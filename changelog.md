@@ -13,10 +13,16 @@
 * Changed project settings
 
 # 1.2.1-alpha (rc2) :x: **[needs testing]**
-**Dec 21**
-* Updated main file.
-* Minor fixes.
-* Added **resource release** feature.
-* Some project solution files have been updated
-* Big **refactoring**
-  
+**Feb 1**
+* Updated main file. ✅
+* Minor fixes. ✅
+* Added **resource release** feature. ✅ 
+* Some project solution files have been updated ✅
+* Big **refactoring** ✅
+*   Added validation of **PE headers.** 
+    Now the function returns `bool` to log errors correctly. ✅
+* Instead of `fs::current_path().parent_path()`, now `GetModuleFileNameW()` to find the **correct folder.** ✅
+* File upload errors are now correctly recorded in the log. ✅
+* Added logging levels **[INFO], [ERROR]**, and **[CRITICAL].** ✅
+* Logging now takes place in a file, **without interfering with the UI.** ✅
+* Now, before downloading the plugin, `fs::exists(filePath)` is **checked first**, and not filtered through `std::ranges`. ✅
